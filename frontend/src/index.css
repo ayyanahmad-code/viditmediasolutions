@@ -1,0 +1,382 @@
+/* src/App.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =========================
+   Base Styles
+========================= */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-white text-gray-800 antialiased;
+    overflow-x: hidden;
+  }
+}
+
+/* =========================
+   Components
+========================= */
+@layer components {
+  /* Buttons */
+  .btn-primary {
+    @apply px-6 py-3 font-semibold text-white rounded-lg
+    bg-gradient-to-r from-primary via-secondary to-accent
+    hover:opacity-90 transition-all duration-300
+    shadow-lg hover:shadow-xl hover:-translate-y-1;
+  }
+
+  .btn-secondary {
+    @apply px-6 py-3 font-semibold rounded-lg
+    border-2 border-primary text-primary
+    hover:bg-primary hover:text-white
+    transition-all duration-300;
+  }
+
+  /* Sections */
+  .section-padding {
+    @apply py-16 px-4;
+  }
+
+  /* Card */
+  .card {
+    @apply bg-white rounded-2xl shadow-md
+    hover:shadow-xl transition-all duration-300;
+  }
+}
+
+/* =========================
+   Animations
+========================= */
+
+/* Floating (logo / icons) */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+/* Fade In */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Slide Up */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Slide Left */
+@keyframes slideLeft {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Gradient Animation */
+@keyframes gradientMove {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* =========================
+   Bubble Rain Effect - Enhanced
+========================= */
+
+/* Bubble Container - Fixed position overlay */
+.bubble-rain-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+/* Individual Bubble Styles */
+.bubble {
+  position: absolute;
+  bottom: -50px;
+  border-radius: 50%;
+  pointer-events: none;
+  will-change: transform, opacity;
+  
+  /* Gradient background for bubbles */
+  background: radial-gradient(
+    circle at 30% 30%,
+    rgba(91, 46, 219, 0.9),
+    rgba(91, 46, 219, 0.6),
+    rgba(91, 46, 219, 0.2),
+    rgba(91, 46, 219, 0.05)
+  );
+  
+  /* Bubble shine effect */
+  box-shadow: 
+    0 0 10px rgba(91, 46, 219, 0.3),
+    inset 0 1px 1px rgba(255, 255, 255, 0.5);
+  
+  /* Animation */
+  animation: bubbleFloatUp linear forwards;
+}
+
+/* Bubble shine/reflection */
+.bubble::before {
+  content: '';
+  position: absolute;
+  top: 15%;
+  left: 20%;
+  width: 25%;
+  height: 25%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.8),
+    rgba(255, 255, 255, 0)
+  );
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Bubble inner glow */
+.bubble::after {
+  content: '';
+  position: absolute;
+  bottom: 20%;
+  right: 25%;
+  width: 15%;
+  height: 15%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.6),
+    rgba(255, 255, 255, 0)
+  );
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Bubble Float Animation */
+@keyframes bubbleFloatUp {
+  0% {
+    transform: translateX(0) translateY(0) scale(0.3);
+    opacity: 0;
+  }
+  
+  10% {
+    opacity: 0.8;
+    transform: translateX(calc(var(--sway, 0px) * 0.2)) translateY(-10vh) scale(0.6);
+  }
+  
+  30% {
+    opacity: 1;
+    transform: translateX(calc(var(--sway, 0px) * 0.5)) translateY(-30vh) scale(0.8);
+  }
+  
+  50% {
+    transform: translateX(var(--sway, 0px)) translateY(-50vh) scale(1);
+    opacity: 0.9;
+  }
+  
+  70% {
+    transform: translateX(calc(var(--sway, 0px) * 1.2)) translateY(-70vh) scale(1.1);
+    opacity: 0.7;
+  }
+  
+  85% {
+    opacity: 0.4;
+  }
+  
+  100% {
+    transform: translateX(calc(var(--sway, 0px) * 1.5)) translateY(-110vh) scale(1.2);
+    opacity: 0;
+  }
+}
+
+/* Add this to the Animations section of App.css */
+/* =========================
+   Bubble Floating Up
+========================= */
+.bubble-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+
+  /* 🔥 IMPORTANT */
+  z-index: 10;
+}
+
+.bubble {
+  position: absolute;
+  bottom: -30px;
+  border-radius: 9999px;
+  pointer-events: none;
+
+  background: radial-gradient(
+    circle at 30% 30%,
+    rgba(91, 46, 219, 0.9),
+    rgba(91, 46, 219, 0.6),
+    rgba(91, 46, 219, 0.3)
+);
+
+
+  box-shadow: 0 0 6px rgba(91, 46, 219, 0.5);
+}
+
+
+.animate-bubble-float {
+  animation: bubbleFloatUp var(--float-duration) ease-in forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes bubbleFloatUp {
+  0% {
+    transform: translateX(0) translateY(0) scale(0.7);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 0.9;
+  }
+
+  50% {
+    transform: translateX(var(--sway)) translateY(-50vh) scale(1);
+  }
+
+  90% {
+    opacity: 0.6;
+  }
+
+  100% {
+    transform: translateX(calc(var(--sway) * 1.5))
+      translateY(-110vh)
+      scale(1.1);
+    opacity: 0;
+  }
+}
+
+/* =========================
+   Animation Utilities
+========================= */
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.6s ease-in-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.6s ease-out forwards;
+}
+
+.animate-slide-left {
+  animation: slideLeft 0.6s ease-out forwards;
+}
+
+.animate-gradient {
+  background-size: 300% 300%;
+  animation: gradientMove 6s ease infinite;
+}
+
+/* =========================
+   Glow Effects
+========================= */
+.glow-primary {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+}
+
+.glow-accent {
+  box-shadow: 0 0 25px rgba(236, 72, 153, 0.6);
+}
+
+/* =========================
+   Scrollbar Hide
+========================= */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* =========================
+   Logo Scroll Animation
+========================= */
+@keyframes logo-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-logo-scroll {
+  width: max-content;
+  animation: logo-scroll 25s linear infinite;
+}
+
+/* =========================
+   Responsive Adjustments
+========================= */
+@media (max-width: 768px) {
+  .bubble {
+    opacity: 0.5; /* Reduce opacity on mobile for better performance */
+  }
+  
+  .bubble::before,
+  .bubble::after {
+    display: none; /* Remove shine effects on mobile for performance */
+  }
+}
+
+/* =========================
+   Performance Optimizations
+========================= */
+@media (prefers-reduced-motion: reduce) {
+  .bubble {
+    animation: none;
+    display: none;
+  }
+  
+  .animate-float,
+  .animate-fade-in,
+  .animate-slide-up,
+  .animate-slide-left,
+  .animate-gradient,
+  .animate-logo-scroll {
+    animation: none;
+  }
+}
