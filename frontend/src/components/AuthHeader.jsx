@@ -28,10 +28,11 @@ const AuthHeader = () => {
 
   const navItems = [
     { name: "Dashboard", path: "/dashboard", icon: <FaTachometerAlt className="mr-2" /> },
-    { name: "Contact Requests", path: "/contact-requests", icon: <FaEnvelope className="mr-2" /> },
     { name: "Applications", path: "/career-applications", icon: <FaBriefcase className="mr-2" /> },
+    {name: "Our Clients", path: "/admin/our-clients", icon: <FaUserCircle className="mr-2" />}, 
+    {name: "Videos", path: "/admin/videos", icon: <FaVideo className="mr-2" />},
+    { name: "Contact", path: "/contact-requests", icon: <FaEnvelope className="mr-2" /> },
     {name: "Create Career", path: "/create-career", icon: <FaBriefcase className="mr-2" />},
-    {name: "Admin Videos", path: "/admin/videos", icon: <FaVideo className="mr-2" />} 
   ];
 
   // Hide header on scroll down, show on scroll up
@@ -105,13 +106,13 @@ const AuthHeader = () => {
                   key={item.name}
                   to={item.path}
                   className={`
-                    flex items-center px-5 py-2 text-lg font-medium
+                    flex items-center px-5 py-2 text-md font-medium
                     border-2 rounded-md
                     transition-all duration-300
                     
                     ${
                       isActive
-                        ? "text-red-400 border-white bg-white/10"
+                        ? "text-white border-white bg-white/10"
                         : "text-white border-transparent hover:border-white hover:text-red-400"
                     }
                   `}
@@ -130,7 +131,7 @@ const AuthHeader = () => {
               className="
                 flex items-center space-x-3
                 text-white border-2 border-white
-                rounded-md px-4 py-2
+                rounded-md px-6 py-2
                 hover:bg-white hover:text-black
                 transition-all duration-300
               "
@@ -160,44 +161,7 @@ const AuthHeader = () => {
                 >
                   <FaUserCircle className="text-gray-400" />
                   My Profile
-                </Link>
-                
-                <Link
-                  to="/dashboard"
-                  className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                  onClick={() => setIsDropdownOpen(false)}
-                >
-                  <FaTachometerAlt className="text-gray-400" />
-                  Dashboard
-                </Link>
-                
-                <Link
-                  to="/contact-requests"
-                  className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                  onClick={() => setIsDropdownOpen(false)}
-                >
-                  <FaEnvelope className="text-gray-400" />
-                  Contact Requests
-                </Link>    
-                
-                <Link
-                  to="/career-applications"
-                  className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                  onClick={() => setIsDropdownOpen(false)}
-                >
-                  <FaBriefcase className="text-gray-400" />
-                  Applications
-                </Link>
-
-              <Link
-              to="/create-career"
-              className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-              onClick={() => setIsDropdownOpen(false)}
-            >
-              <FaBriefcase className="text-gray-400" />
-              Create Career 
-            </Link>
-                
+                </Link> 
                 <div className="border-t border-gray-100 mt-2 pt-2">
                   <button
                     onClick={handleLogout}

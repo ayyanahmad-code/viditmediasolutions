@@ -1,7 +1,4 @@
-// backend/src/controllers/videoController.js
 const { pool } = require('../config/database');
-const path = require('path');
-const fs = require('fs');
 
 // Helper function to get YouTube ID
 const getYouTubeId = (url) => {
@@ -11,17 +8,31 @@ const getYouTubeId = (url) => {
   return match && match[2].length === 11 ? match[2] : null;
 };
 
-// Get all videos
+// Get all videos (including inactive ones for admin)
 exports.getAllVideos = async (req, res) => {
   try {
     console.log('📋 Fetching all videos...');
     
-    const sql = `SELECT id, title, thumbnail, youtube_url, youtube_id, 
-                        slider_type, display_order, status, 
-                        DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as created_at
-                 FROM videos 
-                 WHERE status = 'active'
-                 ORDER BY display_order ASC, created_at DESC`;
+    // Check if request is from admin (has token)
+    const isAdmin = req.headers.authorization ? true : false;
+    
+    let sql;
+    if (isAdmin) {
+      // Admin can see all videos including inactive
+      sql = `SELECT id, title, youtube_url, youtube_id, 
+                      slider_type, status, 
+                      DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as created_at
+               FROM videos 
+               ORDER BY created_at DESC`;
+    } else {
+      // Public only sees active videos
+      sql = `SELECT id, title, youtube_url, youtube_id, 
+                      slider_type, status, 
+                      DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as created_at
+               FROM videos 
+               WHERE status = 'active'
+               ORDER BY created_at DESC`;
+    }
     
     const [videos] = await pool.query(sql);
     
@@ -48,12 +59,12 @@ exports.getVideosBySliderType = async (req, res) => {
     
     console.log(`📋 Fetching videos for slider: ${slider_type}`);
     
-    const sql = `SELECT id, title, thumbnail, youtube_url, youtube_id, 
-                        slider_type, display_order, status, 
+    const sql = `SELECT id, title, youtube_url, youtube_id, 
+                        slider_type, status, 
                         DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as created_at
                  FROM videos 
                  WHERE status = 'active' AND slider_type = ?
-                 ORDER BY display_order ASC, created_at DESC`;
+                 ORDER BY created_at DESC`;
     
     const [videos] = await pool.query(sql, [slider_type]);
     
@@ -100,26 +111,32 @@ exports.getVideoById = async (req, res) => {
   }
 };
 
-// Upload video (Create)
-exports.uploadVideo = async (req, res) => {
+// Upload video (JSON version)
+exports.uploadVideoJSON = async (req, res) => {
   try {
-    const { title, youtube_url, slider_type, display_order } = req.body;
-    const thumbnailFile = req.file;
+    const { title, youtube_url, slider_type, status } = req.body;
 
-    console.log('📝 Video Upload Request:', { title, youtube_url, slider_type, display_order });
+    console.log('📝 Video Upload Request (JSON):', req.body);
 
     // Validation
-    if (!title || !youtube_url || !slider_type) {
+    if (!title) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide title, youtube_url and slider_type'
+        message: 'Please provide title'
       });
     }
-
-    if (!thumbnailFile) {
+    
+    if (!youtube_url) {
       return res.status(400).json({
         success: false,
-        message: 'Please upload a thumbnail image'
+        message: 'Please provide youtube_url'
+      });
+    }
+    
+    if (!slider_type) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide slider_type'
       });
     }
 
@@ -128,31 +145,29 @@ exports.uploadVideo = async (req, res) => {
     if (!youtube_id) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid YouTube URL'
+        message: 'Invalid YouTube URL. Please check the URL format.'
       });
     }
 
-    // Save thumbnail path as URL (accessible from browser)
-    const thumbnailUrl = `/thumbnails/${thumbnailFile.filename}`;
+    // Set status (default to 'active' if not provided)
+    const videoStatus = status || 'active';
 
     // Insert into database
     const sql = `INSERT INTO videos 
-      (title, thumbnail, youtube_url, youtube_id, slider_type, display_order, status) 
-      VALUES (?, ?, ?, ?, ?, ?, 'active')`;
+      (title, youtube_url, youtube_id, slider_type, status) 
+      VALUES (?, ?, ?, ?, ?)`;
     
     const [result] = await pool.query(sql, [
       title.trim(),
-      thumbnailUrl,
       youtube_url.trim(),
       youtube_id,
       slider_type,
-      display_order || 0
+      videoStatus
     ]);
 
     console.log('✅ Video saved! ID:', result.insertId);
-    console.log('📸 Thumbnail saved at:', thumbnailUrl);
 
-    res.status(200).json({
+    res.status(201).json({
       success: true,
       message: 'Video uploaded successfully',
       data: {
@@ -160,7 +175,7 @@ exports.uploadVideo = async (req, res) => {
         title,
         youtube_id,
         slider_type,
-        thumbnail: thumbnailUrl
+        status: videoStatus
       }
     });
 
@@ -173,14 +188,14 @@ exports.uploadVideo = async (req, res) => {
   }
 };
 
-// Update video
-exports.updateVideo = async (req, res) => {
+// Update video (JSON version)
+exports.updateVideoJSON = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, youtube_url, slider_type, display_order, status } = req.body;
-    const thumbnailFile = req.file;
+    const { title, youtube_url, slider_type, status } = req.body;
 
-    console.log('📝 Update Video Request for ID:', id);
+    console.log('📝 Update Video Request (JSON) for ID:', id);
+    console.log('Update data:', req.body);
 
     // Check if video exists
     const [existing] = await pool.query('SELECT * FROM videos WHERE id = ?', [id]);
@@ -191,55 +206,48 @@ exports.updateVideo = async (req, res) => {
       });
     }
 
-    // Get YouTube ID if URL provided
-    let youtube_id = existing[0].youtube_id;
-    if (youtube_url && youtube_url !== existing[0].youtube_url) {
-      youtube_id = getYouTubeId(youtube_url);
+    // Prepare update fields
+    const updates = [];
+    const values = [];
+
+    if (title !== undefined && title !== existing[0].title) {
+      updates.push('title = ?');
+      values.push(title.trim());
+    }
+    
+    if (youtube_url !== undefined && youtube_url !== existing[0].youtube_url) {
+      const youtube_id = getYouTubeId(youtube_url);
       if (!youtube_id) {
         return res.status(400).json({
           success: false,
           message: 'Invalid YouTube URL'
         });
       }
+      updates.push('youtube_url = ?');
+      updates.push('youtube_id = ?');
+      values.push(youtube_url.trim(), youtube_id);
     }
-
-    // Build update query
-    let sql = `UPDATE videos SET 
-      title = COALESCE(?, title),
-      youtube_url = COALESCE(?, youtube_url),
-      youtube_id = COALESCE(?, youtube_id),
-      slider_type = COALESCE(?, slider_type),
-      display_order = COALESCE(?, display_order),
-      status = COALESCE(?, status)`;
     
-    const values = [
-      title || null,
-      youtube_url || null,
-      youtube_id || null,
-      slider_type || null,
-      display_order !== undefined ? display_order : null,
-      status || null
-    ];
-
-    // Add thumbnail if provided
-    if (thumbnailFile) {
-      const thumbnailUrl = `/thumbnails/${thumbnailFile.filename}`;
-      sql += `, thumbnail = ?`;
-      values.push(thumbnailUrl);
-      
-      // Delete old thumbnail file
-      if (existing[0].thumbnail) {
-        const oldThumbnailPath = path.join(__dirname, '../../public', existing[0].thumbnail);
-        if (fs.existsSync(oldThumbnailPath)) {
-          fs.unlinkSync(oldThumbnailPath);
-          console.log('✅ Old thumbnail deleted');
-        }
-      }
+    if (slider_type !== undefined && slider_type !== existing[0].slider_type) {
+      updates.push('slider_type = ?');
+      values.push(slider_type);
+    }
+    
+    if (status !== undefined && status !== existing[0].status) {
+      updates.push('status = ?');
+      values.push(status);
     }
 
-    sql += ` WHERE id = ?`;
-    values.push(id);
+    if (updates.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No changes to update'
+      });
+    }
 
+    values.push(id);
+    const sql = `UPDATE videos SET ${updates.join(', ')} WHERE id = ?`;
+    
     await pool.query(sql, values);
 
     console.log('✅ Video updated! ID:', id);
@@ -262,18 +270,6 @@ exports.updateVideo = async (req, res) => {
 exports.deleteVideo = async (req, res) => {
   try {
     const { id } = req.params;
-    
-    // Get thumbnail path to delete file
-    const [video] = await pool.query('SELECT thumbnail FROM videos WHERE id = ?', [id]);
-    
-    // Delete thumbnail file if exists
-    if (video.length > 0 && video[0].thumbnail) {
-      const thumbnailPath = path.join(__dirname, '../../public', video[0].thumbnail);
-      if (fs.existsSync(thumbnailPath)) {
-        fs.unlinkSync(thumbnailPath);
-        console.log('✅ Thumbnail file deleted');
-      }
-    }
     
     const sql = 'DELETE FROM videos WHERE id = ?';
     await pool.query(sql, [id]);

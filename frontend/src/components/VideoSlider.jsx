@@ -1,173 +1,230 @@
-import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { FaPlay, FaTimes, FaChevronLeft, FaChevronRight } from "react-icons/fa";
+// src/components/VideoSlider.jsx
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { motion } from "framer-motion";
+import {
+  FaPlay,
+  FaChevronLeft,
+  FaChevronRight,
+  FaTimes,
+  FaSpinner,
+} from "react-icons/fa";
 
-// Thumbnails
-import Nib from "../Images/Thumbnail/nib1.jpg";
-import Vidit from "../Images/Thumbnail/Vidit.jpeg";
-import Accidental from "../Images/Thumbnail/Accidental_Insurance.jpeg";
-import Balloon from "../Images/Thumbnail/Balloon_City1.jpg";
-import Bindu from "../Images/Thumbnail/Bindu_sweets1.jpg";
-import Kalakri from "../Images/Thumbnail/Kalakri_India1.jpg";
+const API_BASE_URL = "http://localhost:5000/api";
 
-/* ================= VIDEO DATA ================= */
-const videos = [
-  { thumbnail: Nib, youtube: "https://www.youtube.com/watch?v=otBbIxW49kI" },
-  { thumbnail: Vidit, youtube: "https://www.youtube.com/watch?v=yBjES9O4Z-4" },
-  { thumbnail: Accidental, youtube: "https://www.youtube.com/watch?v=uLN0c2moqps" },
-  { thumbnail: Balloon, youtube: "https://www.youtube.com/watch?v=2DeQKAjDHOA" },
-  { thumbnail: Bindu, youtube: "https://www.youtube.com/watch?v=0nylwlpbMw8" },
-  { thumbnail: Kalakri, youtube: "https://www.youtube.com/watch?v=WQXqQEj_h6I" },
-];
-
-/* ================= YOUTUBE ID ================= */
+/* ================= HELPERS ================= */
 const getYouTubeId = (url) => {
-  const regExp =
-    /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-  const match = url.match(regExp);
+  if (!url) return null;
+  if (!url.includes("http")) return url;
+
+  const match = url.match(
+    /^.*(youtu.be\/|v\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/
+  );
   return match && match[2].length === 11 ? match[2] : null;
 };
 
+const getThumbnail = (id) =>
+  `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+
 const VideoSlider = () => {
-  const [activeVideo, setActiveVideo] = useState(null);
+  const [videos, setVideos] = useState([]);
   const [index, setIndex] = useState(0);
-  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const [activeVideo, setActiveVideo] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const autoRef = useRef(null);
 
-  const current = videos[index];
+  /* ================= FETCH ================= */
+  const fetchVideos = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/videos/slider/slider1`);
+      const data = await res.json();
 
-  /* ================= AUTO PLAY ================= */
-  useEffect(() => {
-    if (isAutoPlaying) {
-      const interval = setInterval(() => {
-        setIndex((prev) => (prev + 1) % videos.length);
-      }, 4000);
-      return () => clearInterval(interval);
+      const formatted = data.data.map((v) => {
+        const id = getYouTubeId(v.youtube_url);
+        return {
+          ...v,
+          videoId: id,
+          thumbnail: getThumbnail(id),
+        };
+      });
+
+      setVideos(formatted);
+    } catch {
+      console.log("error");
+    } finally {
+      setLoading(false);
     }
-  }, [isAutoPlaying]);
+  };
+
+  useEffect(() => {
+    fetchVideos();
+  }, []);
+
+  /* ================= AUTOPLAY ================= */
+  const next = useCallback(() => {
+    setIndex((prev) => (prev + 1) % videos.length);
+  }, [videos.length]);
+
+  useEffect(() => {
+    if (videos.length === 0) return;
+
+    autoRef.current = setInterval(next, 4000);
+    return () => clearInterval(autoRef.current);
+  }, [videos.length, next]);
 
   const handleNext = () => {
-    setIndex((prev) => (prev + 1) % videos.length);
+    next();
+    resetAuto();
   };
 
   const handlePrev = () => {
     setIndex((prev) => (prev - 1 + videos.length) % videos.length);
+    resetAuto();
+  };
+
+  const resetAuto = () => {
+    clearInterval(autoRef.current);
+    autoRef.current = setInterval(next, 4000);
+  };
+
+  if (loading)
+    return (
+      <div className="flex justify-center items-center h-[300px]">
+        <FaSpinner className="animate-spin text-white text-3xl" />
+      </div>
+    );
+
+  if (!videos.length) return null;
+
+  /* ================= 3D POSITION LOGIC ================= */
+  const getStyle = (i) => {
+    const offset = i - index;
+
+    if (offset === 0)
+      return {
+        scale: 1,
+        rotateY: 0,
+        x: 0,
+        zIndex: 10,
+        opacity: 1,
+      };
+
+    if (offset === -1 || offset === videos.length - 1)
+      return {
+        scale: 0.8,
+        rotateY: 40,
+        x: -220,
+        zIndex: 5,
+        opacity: 0.6,
+      };
+
+    if (offset === 1 || offset === -(videos.length - 1))
+      return {
+        scale: 0.8,
+        rotateY: -40,
+        x: 220,
+        zIndex: 5,
+        opacity: 0.6,
+      };
+
+    return {
+      scale: 0.6,
+      rotateY: 0,
+      x: 0,
+      zIndex: 1,
+      opacity: 0,
+    };
   };
 
   return (
     <>
-      {/* ================= MAIN CONTAINER ================= */}
-      <div className="ml-36 relative flex flex-col items-start">
+      <div className="relative flex justify-center items-center w-full h-[500px] perspective-[1200px] overflow-hidden">
         
-        {/* Video Container */}
-        <div className="relative flex items-center">
+        {/* SLIDES */}
+        {videos.map((video, i) => {
+          const style = getStyle(i);
 
-          {/* Left Button */}
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={handlePrev}
-            className="absolute -left-16 z-10 w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-all duration-300"
-          >
-            <FaChevronLeft className="text-white text-2xl" />
-          </motion.button>
+          return (
+            <motion.div
+              key={i}
+              animate={{
+                scale: style.scale,
+                rotateY: style.rotateY,
+                x: style.x,
+                opacity: style.opacity,
+              }}
+              transition={{ duration: 0.6 }}
+              className="absolute w-[260px] sm:w-[320px] md:w-[400px] cursor-pointer"
+              style={{
+                zIndex: style.zIndex,
+                transformStyle: "preserve-3d",
+              }}
+              onClick={() => setActiveVideo(video.videoId)}
+            >
+              <div className="rounded-2xl overflow-hidden shadow-2xl">
+                <img
+                  src={video.thumbnail}
+                  className="w-full h-[180px] sm:h-[220px] md:h-[260px] object-cover"
+                  alt=""
+                />
 
-          {/* Video Frame */}
-          <motion.div
-            key={index}
-            initial={{ opacity: 0.6, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            whileHover={{ scale: 1.02 }}
-            transition={{ duration: 0.4 }}
-            className="mr-16 relative rounded-2xl overflow-hidden cursor-pointer shadow-2xl"
-            style={{
-              width: "700px",
-              height: "450px",
-            }}
-            onClick={() => setActiveVideo(getYouTubeId(current.youtube))}
-          >
-            <div className="w-full h-full bg-black flex items-center justify-center">
-              <img
-                src={current.thumbnail}
-                alt="video thumbnail"
-                className="w-full h-full"
-              />
-              
-            </div>
-            
+                {/* overlay */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="bg-white p-3 rounded-full shadow-lg">
+                    <FaPlay className="text-purple-600" />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          );
+        })}
 
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300" />
-
-            <div className="absolute inset-0 flex items-center justify-center">
-              <motion.div
-                whileHover={{ scale: 1.15 }}
-                className="w-20 h-20 bg-white/95 rounded-2xl flex items-center justify-center shadow-2xl backdrop-blur-sm"
-              >
-                <FaPlay className="text-purple-600 ml-1 text-3xl" />
-              </motion.div>
-            </div>
-
-            <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md px-4 py-2 rounded-full text-white text-sm">
-              {index + 1} / {videos.length}
-            </div>
-          </motion.div>
-
-          {/* Right Button */}
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={handleNext}
-            className="absolute -right-1 z-10 w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-all duration-300"
-          >
-            <FaChevronRight className="text-white text-2xl" />
-          </motion.button>
-        </div>
-        <button 
-          onClick={() => setIsAutoPlaying((prev) => !prev)}
-          className="ml-64 mt-4 px-4 py-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors duration-300"
+        {/* BUTTONS */}
+        <button
+          onClick={handlePrev}
+          className="absolute left-4 top-1/2 -translate-y-1/2 
+          bg-black/50 text-white w-10 h-10 rounded-full flex items-center justify-center"
         >
-          {isAutoPlaying ? "Pause Auto-Play" : "Resume Auto-Play"}
+          <FaChevronLeft />
+        </button>
+
+        <button
+          onClick={handleNext}
+          className="absolute right-4 top-1/2 -translate-y-1/2 
+          bg-black/50 text-white w-10 h-10 rounded-full flex items-center justify-center"
+        >
+          <FaChevronRight />
         </button>
       </div>
 
-      {/* ================= VIDEO MODAL ================= */}
-      <AnimatePresence>
-        {activeVideo && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
-            onClick={() => setActiveVideo(null)}
+      {/* MODAL */}
+      {activeVideo && (
+        <div
+          className="fixed inset-0 bg-black/90 flex items-center justify-center z-50"
+          onClick={() => setActiveVideo(null)}
+        >
+          <div
+            className="w-full max-w-3xl"
+            onClick={(e) => e.stopPropagation()}
           >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="relative w-full max-w-6xl"
-              onClick={(e) => e.stopPropagation()}
+            <button
+              className="text-white text-2xl mb-4"
+              onClick={() => setActiveVideo(null)}
             >
-              <button
-                onClick={() => setActiveVideo(null)}
-                className="absolute -top-12 right-0 text-white text-2xl"
-              >
-                <FaTimes />
-              </button>
+              <FaTimes />
+            </button>
 
-              <div className="relative pb-[56.25%] h-0 overflow-hidden rounded-2xl shadow-2xl">
-                <iframe
-                  className="absolute top-0 left-0 w-full h-full"
-                  src={`https://www.youtube.com/embed/${activeVideo}?autoplay=1&rel=0`}
-                  title="YouTube video"
-                  frameBorder="0"
-                  allow="autoplay; encrypted-media"
-                  allowFullScreen
-                />
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <div className="aspect-video">
+              <iframe
+                className="w-full h-full"
+                src={`https://www.youtube.com/embed/${activeVideo}?autoplay=1`}
+                allowFullScreen
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
+
 export default VideoSlider;

@@ -26,6 +26,7 @@ import CareerApplications from './pages/CareerApplications';
 import CreateCareer from './pages/CreateCareer';
 import CareerHiringList from './pages/CareerHiringList';
 import AdminVideos from './pages/AdminVideos';
+import AdminOurClients from './pages/AdminOurClients';
 
 // Layout Component for Public Routes (with regular footer)
 const PublicLayout = ({ children }) => {
@@ -189,6 +190,12 @@ function App() {
               <CareerHiringList />
             </ProtectedRoute>
           } />
+          <Route path="/admin/our-clients" element={
+            <ProtectedRoute>
+              <AdminOurClients />
+            </ProtectedRoute>
+          } 
+        />
 
 
           {/* ✅ 404 Page */}

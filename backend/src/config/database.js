@@ -1,3 +1,4 @@
+// backend/src/config/database.js
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcryptjs');
 
@@ -17,7 +18,6 @@ const pool = mysql.createPool({
 // ✅ Function to create default SuperAdmin
 const createDefaultSuperAdmin = async (connection) => {
   try {
-    // Check if any admin exists
     const [existingAdmin] = await connection.query(
       'SELECT * FROM users WHERE role = ?',
       ['admin']
@@ -26,15 +26,11 @@ const createDefaultSuperAdmin = async (connection) => {
     if (existingAdmin.length === 0) {
       console.log('\n👑 No admin found. Creating SuperAdmin...');
       
-      // Create default SuperAdmin credentials
       const superAdminName = 'SuperAdmin';
       const superAdminEmail = 'superadmin@viditmedia.com';
       const superAdminPassword = 'SuperAdmin@123';
-      
-      // Hash the password
       const hashedPassword = await bcrypt.hash(superAdminPassword, 10);
       
-      // Insert SuperAdmin
       await connection.query(
         `INSERT INTO users (name, email, password, role, isActive, createdAt) 
          VALUES (?, ?, ?, 'admin', true, NOW())`,
@@ -65,7 +61,6 @@ const createDefaultSuperAdmin = async (connection) => {
 // ✅ Function to create default test user (optional)
 const createDefaultTestUser = async (connection) => {
   try {
-    // Check if test user exists
     const [existingUser] = await connection.query(
       'SELECT * FROM users WHERE email = ?',
       ['user@example.com']
@@ -75,7 +70,6 @@ const createDefaultTestUser = async (connection) => {
       const testUserName = 'TestUser';
       const testUserEmail = 'user@example.com';
       const testUserPassword = 'User@123';
-      
       const hashedPassword = await bcrypt.hash(testUserPassword, 10);
       
       await connection.query(
@@ -97,6 +91,61 @@ const createDefaultTestUser = async (connection) => {
   }
 };
 
+// ✅ Function to create our_clients table (without display_order)
+const createOurClientsTable = async (connection) => {
+  try {
+    console.log('📋 Creating our_clients table...');
+    
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS our_clients (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        client_name VARCHAR(255) NOT NULL,
+        logo_path VARCHAR(500) NOT NULL,
+        alt_text VARCHAR(255),
+        status ENUM('active', 'inactive') DEFAULT 'active',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_status (status)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    
+    console.log('✅ Our clients table ready');
+    return true;
+  } catch (error) {
+    console.error('❌ Error creating our_clients table:', error.message);
+    return false;
+  }
+};
+
+// ✅ Function to create videos table
+const createVideosTable = async (connection) => {
+  try {
+    console.log('📋 Creating videos table...');
+    
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS videos (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        title VARCHAR(255) NOT NULL,
+        youtube_url VARCHAR(500) NOT NULL,
+        youtube_id VARCHAR(50) NOT NULL,
+        slider_type ENUM('slider1', 'slider2') DEFAULT 'slider1',
+        status ENUM('active', 'inactive') DEFAULT 'active',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_slider_type (slider_type),
+        INDEX idx_status (status),
+        INDEX idx_youtube_id (youtube_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    
+    console.log('✅ Videos table ready');
+    return true;
+  } catch (error) {
+    console.error('❌ Error creating videos table:', error.message);
+    return false;
+  }
+};
+
 const connectDB = async (retries = 5) => {
   let connection;
   try {
@@ -108,7 +157,7 @@ const connectDB = async (retries = 5) => {
     connection = await pool.getConnection();
     console.log('✅ MySQL Connected Successfully');
     
-    // Create database if not exists (with error handling)
+    // Create database if not exists
     try {
       await connection.query(`CREATE DATABASE IF NOT EXISTS ${process.env.DB_NAME || 'vidit_media'}`);
       await connection.query(`USE ${process.env.DB_NAME || 'vidit_media'}`);
@@ -194,15 +243,36 @@ const connectDB = async (retries = 5) => {
     `);
     console.log('✅ Career hiring table ready');
 
-    // ✅ Create default SuperAdmin (if no admin exists)
+    // Create videos table
+    await createVideosTable(connection);
+    
+    // Create our_clients table
+    await createOurClientsTable(connection);
+    
+    // Create default SuperAdmin
     await createDefaultSuperAdmin(connection);
     
-    // ✅ Optional: Create a test user for development
+    // Create test user for development
     if (process.env.NODE_ENV === 'development') {
       await createDefaultTestUser(connection);
     }
 
+    // Insert sample data for our_clients (if table is empty)
+    const [clientCount] = await connection.query('SELECT COUNT(*) as count FROM our_clients');
+    if (clientCount[0].count === 0) {
+      console.log('📝 Inserting sample client data...');
+      await connection.query(`
+        INSERT INTO our_clients (client_name, logo_path, alt_text, status) VALUES
+        ('Google', '/our-clients/google.png', 'Google Logo', 'active'),
+        ('Microsoft', '/our-clients/microsoft.png', 'Microsoft Logo', 'active'),
+        ('Amazon', '/our-clients/amazon.png', 'Amazon Logo', 'active'),
+        ('Facebook', '/our-clients/facebook.png', 'Facebook Logo', 'active')
+      `);
+      console.log('✅ Sample client data inserted');
+    }
+
     connection.release();
+    console.log('\n🎉 All tables created successfully!\n');
     return true;
     
   } catch (error) {

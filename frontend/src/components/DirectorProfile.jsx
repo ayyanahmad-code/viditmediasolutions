@@ -1,7 +1,7 @@
 // src/components/DirectorProfile.jsx
 import React from "react";
 import { FaQuoteLeft } from "react-icons/fa";
-import Profile from "../Images/DirectorProfile/Image.png";
+import Profile from "../Images/DirectorProfile/Nadhi Mam.jpeg";
 
 const DirectorProfile = () => {
   return (
@@ -26,7 +26,7 @@ const DirectorProfile = () => {
               <img
                 src={Profile}
                 alt="Director"
-                className="w-60 h-60 object-cover rounded-md"
+                className="w-60 h-60  rounded-md"
               />
             </div>
 

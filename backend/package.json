@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "migrate:remove-display-order": "node src/migrations/remove_display_order.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

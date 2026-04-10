@@ -19,7 +19,9 @@ import {
   FaUserTie,
   FaClock,
   FaSave,
-  FaTimes
+  FaTimes,
+  FaToggleOn,
+  FaToggleOff
 } from 'react-icons/fa';
 
 const CareerHiringList = () => {
@@ -29,6 +31,7 @@ const CareerHiringList = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('all'); // 'all', 'active', 'inactive'
   const [selectedApp, setSelectedApp] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -55,6 +58,7 @@ const CareerHiringList = () => {
   useEffect(() => {
     let filtered = [...applications];
     
+    // Apply search filter
     if (searchTerm) {
       filtered = filtered.filter(app => 
         app.position?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -65,9 +69,16 @@ const CareerHiringList = () => {
       );
     }
     
+    // Apply status filter based on active tab
+    if (activeTab === 'active') {
+      filtered = filtered.filter(app => app.status === 'active');
+    } else if (activeTab === 'inactive') {
+      filtered = filtered.filter(app => app.status === 'inactive');
+    }
+    
     setFilteredApps(filtered);
     setCurrentPage(1);
-  }, [searchTerm, applications]);
+  }, [searchTerm, applications, activeTab]);
 
   const fetchApplications = async () => {
     try {
@@ -93,7 +104,7 @@ const CareerHiringList = () => {
       if (data.success) {
         setApplications(data.data || []);
         setFilteredApps(data.data || []);
-        console.log(`✅ Loaded ${data.data.length} career hiring applications`);
+        console.log(`✅ Loaded ${data.data.length} career hiring positions`);
       } else {
         throw new Error(data.message || 'Failed to fetch applications');
       }
@@ -106,7 +117,7 @@ const CareerHiringList = () => {
   };
 
   const deleteApplication = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this application?')) return;
+    if (!window.confirm('Are you sure you want to delete this position?')) return;
     
     try {
       const token = localStorage.getItem('token');
@@ -123,13 +134,13 @@ const CareerHiringList = () => {
       if (data.success) {
         setApplications(applications.filter(app => app.id !== id));
         if (selectedApp?.id === id) setShowModal(false);
-        alert('Application deleted successfully');
+        alert('Position deleted successfully');
       } else {
         alert('Failed to delete: ' + (data.message || 'Unknown error'));
       }
     } catch (error) {
       console.error('Error deleting:', error);
-      alert('Failed to delete application');
+      alert('Failed to delete position');
     }
   };
 
@@ -149,9 +160,8 @@ const CareerHiringList = () => {
       const data = await response.json();
       
       if (response.ok && data.success) {
-        // Refresh the list
         fetchApplications();
-        alert('Application updated successfully');
+        alert('Position updated successfully');
         setIsEditing(false);
         setShowModal(false);
         setSelectedApp(null);
@@ -160,7 +170,41 @@ const CareerHiringList = () => {
       }
     } catch (error) {
       console.error('Error updating:', error);
-      alert('Failed to update application');
+      alert('Failed to update position');
+    }
+  };
+
+  // Toggle status function
+  const toggleStatus = async (id, currentStatus) => {
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    const confirmMessage = currentStatus === 'active' 
+      ? 'Deactivate this position? It will not be visible on the website.'
+      : 'Activate this position? It will become visible on the website.';
+    
+    if (!window.confirm(confirmMessage)) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/career-hiring/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        fetchApplications();
+        alert(`Position ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully`);
+      } else {
+        alert('Failed to update status: ' + (data.message || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error toggling status:', error);
+      alert('Failed to update status');
     }
   };
 
@@ -226,6 +270,10 @@ const CareerHiringList = () => {
   const currentItems = filteredApps.slice(indexOfFirst, indexOfLast);
   const totalPages = Math.ceil(filteredApps.length / itemsPerPage);
 
+  // Calculate counts
+  const activeCount = applications.filter(app => app.status === 'active').length;
+  const inactiveCount = applications.filter(app => app.status === 'inactive').length;
+
   if (loading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -263,7 +311,7 @@ const CareerHiringList = () => {
         <div className="flex justify-between items-center mb-8 flex-wrap gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-800">Career Hiring List</h1>
-            <p className="text-gray-600 mt-1">Total: {applications.length} positions</p>
+            <p className="text-gray-600 mt-1">Total Positions: {applications.length}</p>
           </div>
           <div className="flex gap-3">
             <Link 
@@ -298,9 +346,7 @@ const CareerHiringList = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-sm">Active Positions</p>
-                <p className="text-3xl font-bold text-green-600">
-                  {applications.filter(app => app.status === 'active').length}
-                </p>
+                <p className="text-3xl font-bold text-green-600">{activeCount}</p>
               </div>
               <div className="bg-green-100 rounded-full p-3">
                 <FaCheckCircle className="text-2xl text-green-600" />
@@ -311,9 +357,7 @@ const CareerHiringList = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-sm">Inactive Positions</p>
-                <p className="text-3xl font-bold text-red-600">
-                  {applications.filter(app => app.status === 'inactive').length}
-                </p>
+                <p className="text-3xl font-bold text-red-600">{inactiveCount}</p>
               </div>
               <div className="bg-red-100 rounded-full p-3">
                 <FaTimesCircle className="text-2xl text-red-600" />
@@ -335,17 +379,55 @@ const CareerHiringList = () => {
           </div>
         </div>
 
-        {/* Search */}
-        <div className="bg-white rounded-lg shadow p-4 mb-6">
-          <div className="relative">
-            <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by position, shift, work mode, skills, or experience..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
+        {/* Status Filter Tabs */}
+        <div className="bg-white rounded-lg shadow mb-6">
+          <div className="border-b border-gray-200 px-4">
+            <nav className="-mb-px flex space-x-8">
+              <button
+                onClick={() => setActiveTab('all')}
+                className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === 'all'
+                    ? 'border-purple-500 text-purple-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                All Positions ({applications.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('active')}
+                className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === 'active'
+                    ? 'border-green-500 text-green-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Active ({activeCount})
+              </button>
+              <button
+                onClick={() => setActiveTab('inactive')}
+                className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === 'inactive'
+                    ? 'border-red-500 text-red-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Inactive ({inactiveCount})
+              </button>
+            </nav>
+          </div>
+
+          {/* Search */}
+          <div className="p-4 border-b border-gray-200">
+            <div className="relative">
+              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search by position, shift, work mode, skills, or experience..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
           </div>
         </div>
 
@@ -354,7 +436,11 @@ const CareerHiringList = () => {
           {filteredApps.length === 0 ? (
             <div className="text-center py-12">
               <FaBriefcase className="text-6xl text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">No career hiring positions found</p>
+              <p className="text-gray-500">
+                {activeTab === 'all' && 'No career hiring positions found'}
+                {activeTab === 'active' && 'No active positions found'}
+                {activeTab === 'inactive' && 'No inactive positions found'}
+              </p>
               <Link to="/create-career" className="text-purple-600 hover:text-purple-700 mt-2 inline-block">
                 Click here to add a new position
               </Link>
@@ -378,7 +464,7 @@ const CareerHiringList = () => {
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {currentItems.map((app) => (
-                      <tr key={app.id} className="hover:bg-gray-50 transition-colors">
+                      <tr key={app.id} className={`hover:bg-gray-50 transition-colors ${app.status === 'inactive' ? 'bg-gray-50 opacity-75' : ''}`}>
                         <td className="px-6 py-4 text-sm text-gray-900">#{app.id}</td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
@@ -416,7 +502,22 @@ const CareerHiringList = () => {
                             ))}
                           </div>
                         </td>
-                        <td className="px-6 py-4">{getStatusBadge(app.status)}</td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => toggleStatus(app.id, app.status)}
+                              className={`p-1 rounded-lg transition-colors ${
+                                app.status === 'active' 
+                                  ? 'text-green-600 hover:text-green-800 hover:bg-green-50' 
+                                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                              }`}
+                              title={app.status === 'active' ? 'Deactivate' : 'Activate'}
+                            >
+                              {app.status === 'active' ? <FaToggleOn size={18} /> : <FaToggleOff size={18} />}
+                            </button>
+                            {getStatusBadge(app.status)}
+                          </div>
+                        </td>
                         <td className="px-6 py-4 text-sm text-gray-500">
                           <div className="flex items-center gap-2">
                             <FaCalendarAlt className="text-gray-400" />
@@ -580,6 +681,9 @@ const CareerHiringList = () => {
                           <span>Inactive</span>
                         </label>
                       </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Inactive positions will not be displayed on the website
+                      </p>
                     </div>
                     <div>
                       <label className="text-gray-500 text-sm block mb-1">Additional Message</label>

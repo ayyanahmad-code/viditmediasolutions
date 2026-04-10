@@ -182,3 +182,45 @@
     border-right-color: var(--border);
   }
 }
+
+/* Add to your index.css or App.css */
+@keyframes logo-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-logo-scroll {
+  animation: logo-scroll 20s linear infinite;
+  width: fit-content;
+}
+
+.animate-logo-scroll:hover {
+  animation-play-state: paused;
+}
+
+
+/* Logo Slider Animation */
+@keyframes logo-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-logo-scroll {
+  animation: logo-scroll 20s linear infinite;
+  width: fit-content;
+}
+
+/* Paused animation on hover */
+.animate-logo-scroll-paused {
+  animation: logo-scroll 20s linear infinite;
+  animation-play-state: paused;
+  width: fit-content;
+}

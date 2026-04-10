@@ -96,14 +96,14 @@ const Header = () => {
         </div>
       </div>
 
-      <div className="container mx-auto px-2 py-1">
+      <div className="container mx-auto px-6">
         <div className="flex justify-between items-center">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3">
             <img
               src={Logo}
               alt="Vidit Media Solutions Logo"
-              className="h-20 w-32"
+              className="h-18 w-36"
             />
           </Link>
 
