@@ -61,7 +61,13 @@ const VideoSlider = () => {
 
   /* ================= AUTOPLAY ================= */
   const next = useCallback(() => {
+    if (videos.length === 0) return;
     setIndex((prev) => (prev + 1) % videos.length);
+  }, [videos.length]);
+
+  const prev = useCallback(() => {
+    if (videos.length === 0) return;
+    setIndex((prev) => (prev - 1 + videos.length) % videos.length);
   }, [videos.length]);
 
   useEffect(() => {
@@ -77,13 +83,15 @@ const VideoSlider = () => {
   };
 
   const handlePrev = () => {
-    setIndex((prev) => (prev - 1 + videos.length) % videos.length);
+    prev();
     resetAuto();
   };
 
   const resetAuto = () => {
     clearInterval(autoRef.current);
-    autoRef.current = setInterval(next, 4000);
+    if (videos.length > 0) {
+      autoRef.current = setInterval(next, 4000);
+    }
   };
 
   if (loading)
@@ -178,11 +186,15 @@ const VideoSlider = () => {
           );
         })}
 
-        {/* BUTTONS */}
+        {/* BUTTONS - Fixed z-index to ensure they're clickable */}
         <button
           onClick={handlePrev}
           className="absolute left-4 top-1/2 -translate-y-1/2 
-          bg-black/50 text-white w-10 h-10 rounded-full flex items-center justify-center"
+          bg-black/50 hover:bg-black/70 text-white w-10 h-10 rounded-full 
+          flex items-center justify-center transition-all duration-300
+          z-20 cursor-pointer"
+          style={{ pointerEvents: 'auto' }}
+          aria-label="Previous video"
         >
           <FaChevronLeft />
         </button>
@@ -190,7 +202,11 @@ const VideoSlider = () => {
         <button
           onClick={handleNext}
           className="absolute right-4 top-1/2 -translate-y-1/2 
-          bg-black/50 text-white w-10 h-10 rounded-full flex items-center justify-center"
+          bg-black/50 hover:bg-black/70 text-white w-10 h-10 rounded-full 
+          flex items-center justify-center transition-all duration-300
+          z-20 cursor-pointer"
+          style={{ pointerEvents: 'auto' }}
+          aria-label="Next video"
         >
           <FaChevronRight />
         </button>
