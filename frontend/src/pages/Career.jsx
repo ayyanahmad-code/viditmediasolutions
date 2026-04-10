@@ -211,30 +211,7 @@ const CareerPage = () => {
               )}
             </div>
 
-            {/* Why Join Us Section */}
-            <div className="mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 text-center">
-                Why Join Vidit Media?
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {benefits.map((benefit, index) => (
-                  <div 
-                    key={index} 
-                    className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 text-center group"
-                  >
-                    <div className="flex justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300">
-                      {benefit.icon}
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      {benefit.title}
-                    </h3>
-                    <p className="text-gray-600 text-sm">
-                      {benefit.description}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
+           
 
             {/* Hiring Process */}
             <div>
@@ -274,68 +251,28 @@ const CareerPage = () => {
 
           {/* Right Side - Quick Application */}
           <div className="lg:w-1/3">
-            <div className="sticky top-24 bg-white rounded-2xl shadow-xl border border-gray-100 p-6 hover:shadow-2xl transition-shadow duration-300">
-              <div className="text-center mb-6">
-                <div className="w-20 h-20 bg-gradient-to-r from-purple-100 to-purple-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <FaHeart className="text-3xl text-purple-600" />
-                </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                  Ready to Apply?
-                </h3>
-                <p className="text-gray-600">
-                  Start your application process now. It only takes a few minutes!
-                </p>
-              </div>
-              
-              <button
-                onClick={() => handleApplyClick()}
-                className="block w-full text-center bg-gradient-to-r from-purple-600 to-purple-700 text-white font-semibold py-3 px-6 rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-300 mb-4 shadow-md hover:shadow-lg"
-              >
-                Start Application
-              </button>
-              
-              <button
-                onClick={() => handleApplyClick()}
-                className="block w-full text-center border-2 border-purple-600 text-purple-600 font-semibold py-3 px-6 rounded-lg hover:bg-purple-50 transition-all duration-300"
-              >
-                Upload Resume
-              </button>
-              
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <FaChartLine className="text-purple-600" />
-                  Application Tips:
-                </h4>
-                <ul className="space-y-2 text-sm text-gray-600">
-                  <li className="flex items-start gap-2">
-                    <span className="text-purple-600 mt-0.5">✓</span>
-                    Tailor your resume to the position
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-purple-600 mt-0.5">✓</span>
-                    Include relevant experience and portfolio
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-purple-600 mt-0.5">✓</span>
-                    Write a compelling cover letter
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-purple-600 mt-0.5">✓</span>
-                    Double-check your contact information
-                  </li>
-                </ul>
-              </div>
-
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <div className="bg-purple-50 rounded-lg p-4">
-                  <p className="text-sm text-purple-800 text-center">
-                    <strong>Need help?</strong><br />
-                    Contact our HR team at<br />
-                    <a href="mailto:careers@viditmedia.com" className="text-purple-600 hover:underline">
-                      careers@viditmedia.com
-                    </a>
-                  </p>
-                </div>
+             {/* Why Join Us Section */}
+            <div className="mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 text-center">
+                Why Join Vidit Media?
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {benefits.map((benefit, index) => (
+                  <div 
+                    key={index} 
+                    className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 text-center group"
+                  >
+                    <div className="flex justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300">
+                      {benefit.icon}
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      {benefit.title}
+                    </h3>
+                    <p className="text-gray-600 text-sm">
+                      {benefit.description}
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

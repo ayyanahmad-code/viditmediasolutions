@@ -27,6 +27,8 @@ import CreateCareer from './pages/CreateCareer';
 import CareerHiringList from './pages/CareerHiringList';
 import AdminVideos from './pages/AdminVideos';
 import AdminOurClients from './pages/AdminOurClients';
+import Gallery from './pages/Gallery';
+import AdminGalleryForm from './pages/AdminGalleryForm';
 
 // Layout Component for Public Routes (with regular footer)
 const PublicLayout = ({ children }) => {
@@ -124,7 +126,11 @@ function App() {
               <CareerApplicationPage />
             </PublicLayout>
           } />
-
+          <Route path="/gallery" element={
+            <PublicLayout>
+              <Gallery />
+            </PublicLayout>
+          } />
 
 
           {/* ✅ Protected Routes with ProtectedLayout (Auth Footer) */}
@@ -196,7 +202,12 @@ function App() {
             </ProtectedRoute>
           } 
         />
-
+        <Route path="/admin/gallery/create" element={
+            <ProtectedRoute>
+              <AdminGalleryForm />
+            </ProtectedRoute>
+          } 
+        />
 
           {/* ✅ 404 Page */}
           <Route path="*" element={

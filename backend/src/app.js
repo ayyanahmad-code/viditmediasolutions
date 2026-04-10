@@ -52,6 +52,8 @@ const careerRoutes = require('./routes/careerRoutes');
 const careerHiringRoutes = require('./routes/careerHiringRoutes');
 const videoRoutes = require('./routes/videoRoutes');
 const ourClientsRoutes = require('./routes/ourClientsRoutes');
+const galleryRoutes = require('./routes/galleryRoutes');
+const partnerRoutes = require('./routes/partnerRoutes');
 const path = require('path');
 const fs = require('fs');
 
@@ -88,7 +90,9 @@ createDirectories();
 // Serve static files from public directory
 app.use('/thumbnails', express.static(path.join(__dirname, '../public/thumbnails')));
 app.use('/our-clients', express.static(path.join(__dirname, '../public/our-clients')));
+// In your app.js, make sure these lines exist:
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/api/gallery', galleryRoutes);
 
 console.log('✅ Static files served from /thumbnails');
 
@@ -99,6 +103,8 @@ app.use('/api/career', careerRoutes);
 app.use('/api/career-hiring', careerHiringRoutes);
 app.use('/api/our-clients', ourClientsRoutes);
 app.use('/api/videos', videoRoutes);
+app.use('/api/gallery', galleryRoutes);
+app.use('/api/partners', partnerRoutes);
 
 app.get('/health', (req, res) => {
   res.json({ success: true, message: 'Server is running' });

@@ -11,10 +11,13 @@ import {
   FaUserCircle, 
   FaCog, 
   FaBell,
-  FaBriefcase ,
-  FaVideo // ✅ Added FaBriefcase import
+  FaBriefcase,
+  FaVideo,
+  FaImage  // ✅ Added FaImage import
 } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
+// ✅ Remove this import - it's causing issues
+// import AdminGalleryForm from "../pages/AdminGalleryForm";
 
 const AuthHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -29,10 +32,11 @@ const AuthHeader = () => {
   const navItems = [
     { name: "Dashboard", path: "/dashboard", icon: <FaTachometerAlt className="mr-2" /> },
     { name: "Applications", path: "/career-applications", icon: <FaBriefcase className="mr-2" /> },
-    {name: "Our Clients", path: "/admin/our-clients", icon: <FaUserCircle className="mr-2" />}, 
-    {name: "Videos", path: "/admin/videos", icon: <FaVideo className="mr-2" />},
+    { name: "Our Clients", path: "/admin/our-clients", icon: <FaUserCircle className="mr-2" /> }, 
+    { name: "Videos", path: "/admin/videos", icon: <FaVideo className="mr-2" /> },
     { name: "Contact", path: "/contact-requests", icon: <FaEnvelope className="mr-2" /> },
-    {name: "Create Career", path: "/create-career", icon: <FaBriefcase className="mr-2" />},
+    { name: "Create Career", path: "/create-career", icon: <FaBriefcase className="mr-2" /> },
+    { name: "Gallery", path: "/admin/gallery/create", icon: <FaImage className="mr-2" /> }  
   ];
 
   // Hide header on scroll down, show on scroll up
