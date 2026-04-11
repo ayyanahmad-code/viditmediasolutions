@@ -29,6 +29,7 @@ import AdminVideos from './pages/AdminVideos';
 import AdminOurClients from './pages/AdminOurClients';
 import Gallery from './pages/Gallery';
 import AdminGalleryForm from './pages/AdminGalleryForm';
+import CompanyGallery from './pages/CompanyGallery';
 
 // Layout Component for Public Routes (with regular footer)
 const PublicLayout = ({ children }) => {
@@ -131,7 +132,11 @@ function App() {
               <Gallery />
             </PublicLayout>
           } />
-
+          <Route path="/company-gallery" element={
+            <PublicLayout>
+              <CompanyGallery />
+            </PublicLayout>
+          } />
 
           {/* ✅ Protected Routes with ProtectedLayout (Auth Footer) */}
           <Route 

@@ -12,8 +12,7 @@ const Testimonials = () => {
   return (
     <div className="min-h-screen">
       <div className='text-center mt-10'>
-        <h1 className='text-5xl font-bold mb-6 text-black '>Library Of Pre-Built Designs</h1>
-        <p className='text-xl max-w-3xl mx-auto text-black'> Take a look at these gorgeous Designs made with Vidit Media Solutions and various Designs Builders. These are available for import with Vidit Media Solutions Sites plugin.</p>
+        <h1 className='text-5xl font-bold mb-10 text-black '>What we do at VMS</h1>
       </div>
 <br/>
 
