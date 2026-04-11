@@ -26,7 +26,7 @@ const DirectorProfile = () => {
               <img
                 src={Profile}
                 alt="Director"
-                className="w-60 h-60  rounded-md"
+                className="w-60 h-63  rounded-md "
               />
             </div>
 

@@ -1,4 +1,3 @@
-// backend/src/config/database.js
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcryptjs');
 
@@ -58,7 +57,7 @@ const createDefaultSuperAdmin = async (connection) => {
   }
 };
 
-// ✅ Function to create default test user (optional)
+// ✅ Function to create default test user
 const createDefaultTestUser = async (connection) => {
   try {
     const [existingUser] = await connection.query(
@@ -91,7 +90,7 @@ const createDefaultTestUser = async (connection) => {
   }
 };
 
-// ✅ Function to create our_clients table (without display_order)
+// ✅ Function to create our_clients table
 const createOurClientsTable = async (connection) => {
   try {
     console.log('📋 Creating our_clients table...');
@@ -113,6 +112,177 @@ const createOurClientsTable = async (connection) => {
     return true;
   } catch (error) {
     console.error('❌ Error creating our_clients table:', error.message);
+    return false;
+  }
+};
+
+// ✅ Function to create gallery table with full support for multiple media types
+const createGalleryTable = async (connection) => {
+  try {
+    console.log('📋 Creating gallery table with multi-media support...');
+    
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS gallery (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        partner_id INT NULL,
+        category ENUM('images', 'event_video', 'instagram_video', 'youtube_video') NOT NULL,
+        
+        -- Media storage (JSON arrays for multiple files/URLs)
+        media_urls JSON NULL COMMENT 'JSON array of uploaded image/video paths',
+        instagram_urls JSON NULL COMMENT 'JSON array of Instagram video URLs',
+        youtube_urls JSON NULL COMMENT 'JSON array of YouTube video URLs',
+        
+        -- Additional fields
+        thumbnail_url VARCHAR(500) NULL,
+        featured BOOLEAN DEFAULT FALSE,
+        likes INT DEFAULT 0,
+        views INT DEFAULT 0,
+        status ENUM('active', 'inactive') DEFAULT 'active',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        
+        -- Indexes for performance
+        INDEX idx_category (category),
+        INDEX idx_partner_id (partner_id),
+        INDEX idx_status (status),
+        INDEX idx_featured (featured),
+        INDEX idx_created_at (created_at),
+        INDEX idx_likes (likes),
+        INDEX idx_views (views),
+        
+        -- Foreign key constraint
+        FOREIGN KEY (partner_id) REFERENCES partners(id) ON DELETE SET NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    
+    console.log('✅ Gallery table created with multi-media support');
+    return true;
+  } catch (error) {
+    console.error('❌ Error creating gallery table:', error.message);
+    return false;
+  }
+};
+
+// ✅ Function to update existing gallery table with new columns
+const updateExistingGalleryTable = async (connection) => {
+  try {
+    console.log('📋 Updating existing gallery table...');
+    
+    // Check and add instagram_urls column
+    const [instagramColumn] = await connection.query(`
+      SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_NAME = 'gallery' AND COLUMN_NAME = 'instagram_urls'
+    `);
+    
+    if (instagramColumn.length === 0) {
+      await connection.query(`
+        ALTER TABLE gallery 
+        ADD COLUMN instagram_urls JSON NULL COMMENT 'JSON array of Instagram video URLs'
+      `);
+      console.log('✅ Added instagram_urls column');
+    }
+    
+    // Check and add youtube_urls column
+    const [youtubeColumn] = await connection.query(`
+      SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_NAME = 'gallery' AND COLUMN_NAME = 'youtube_urls'
+    `);
+    
+    if (youtubeColumn.length === 0) {
+      await connection.query(`
+        ALTER TABLE gallery 
+        ADD COLUMN youtube_urls JSON NULL COMMENT 'JSON array of YouTube video URLs'
+      `);
+      console.log('✅ Added youtube_urls column');
+    }
+    
+    // Check and update category column to ENUM
+    const [categoryColumn] = await connection.query(`
+      SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_NAME = 'gallery' AND COLUMN_NAME = 'category'
+    `);
+    
+    if (categoryColumn.length > 0 && !categoryColumn[0].COLUMN_TYPE.includes('instagram_video')) {
+      await connection.query(`
+        ALTER TABLE gallery 
+        MODIFY COLUMN category ENUM('images', 'event_video', 'instagram_video', 'youtube_video') NOT NULL
+      `);
+      console.log('✅ Updated category column to support all media types');
+    }
+    
+    // Check if media_urls column exists and is TEXT type
+    const [mediaUrlsColumn] = await connection.query(`
+      SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_NAME = 'gallery' AND COLUMN_NAME = 'media_urls'
+    `);
+    
+    if (mediaUrlsColumn.length === 0) {
+      await connection.query(`
+        ALTER TABLE gallery 
+        ADD COLUMN media_urls JSON NULL COMMENT 'JSON array of multiple media URLs'
+      `);
+      console.log('✅ Added media_urls column');
+    } else if (mediaUrlsColumn[0].DATA_TYPE !== 'json') {
+      await connection.query(`
+        ALTER TABLE gallery 
+        MODIFY COLUMN media_urls JSON NULL COMMENT 'JSON array of multiple media URLs'
+      `);
+      console.log('✅ Converted media_urls to JSON type');
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('❌ Error updating gallery table:', error.message);
+    return false;
+  }
+};
+
+// ✅ Function to create partners table
+const createPartnersTable = async (connection) => {
+  try {
+    console.log('📋 Creating partners table...');
+    
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS partners (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        company_name VARCHAR(255) NOT NULL,
+        company_logo VARCHAR(500),
+        contact_person VARCHAR(100),
+        email VARCHAR(100),
+        phone VARCHAR(20),
+        address TEXT,
+        website VARCHAR(255),
+        status ENUM('active', 'inactive') DEFAULT 'active',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_company_name (company_name),
+        INDEX idx_status (status),
+        INDEX idx_email (email)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    
+    console.log('✅ Partners table created successfully');
+    
+    // Insert sample data if table is empty
+    const [rows] = await connection.query('SELECT COUNT(*) as count FROM partners');
+    if (rows[0].count === 0) {
+      console.log('📝 Inserting sample partner data...');
+      await connection.query(`
+        INSERT INTO partners (company_name, contact_person, email, phone, address, website, status) VALUES
+        ('Vidit Media Solutions', 'Vidit Sharma', 'vidit@viditmedia.com', '+91 9876543210', 'Mumbai, India', 'https://viditmedia.com', 'active'),
+        ('Event Planners India', 'Rajesh Kumar', 'contact@eventplannersindia.com', '+91 9876543211', 'Delhi, India', 'https://eventplannersindia.com', 'active'),
+        ('Grand Events Co.', 'Priya Singh', 'info@grandevents.com', '+91 9876543212', 'Bangalore, India', 'https://grandevents.com', 'active'),
+        ('Elite Event Management', 'Amit Patel', 'amit@eliteevents.com', '+91 9876543213', 'Pune, India', 'https://eliteevents.com', 'active'),
+        ('Royal Occasions', 'Neha Gupta', 'neha@royaloccasions.com', '+91 9876543214', 'Jaipur, India', 'https://royaloccasions.com', 'active')
+      `);
+      console.log('✅ Sample partner data inserted');
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('❌ Error creating partners table:', error.message);
     return false;
   }
 };
@@ -146,6 +316,117 @@ const createVideosTable = async (connection) => {
   }
 };
 
+// ✅ Function to create testimonials table
+const createTestimonialsTable = async (connection) => {
+  try {
+    console.log('📋 Creating testimonials table...');
+    
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS testimonials (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        client_name VARCHAR(255) NOT NULL,
+        client_designation VARCHAR(255),
+        client_company VARCHAR(255),
+        testimonial_text TEXT NOT NULL,
+        client_image VARCHAR(500),
+        rating INT DEFAULT 5,
+        status ENUM('active', 'inactive') DEFAULT 'active',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_status (status),
+        INDEX idx_rating (rating)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    
+    console.log('✅ Testimonials table ready');
+    return true;
+  } catch (error) {
+    console.error('❌ Error creating testimonials table:', error.message);
+    return false;
+  }
+};
+
+// ✅ Function to insert sample gallery data
+const insertSampleGalleryData = async (connection) => {
+  try {
+    const [rows] = await connection.query('SELECT COUNT(*) as count FROM gallery');
+    if (rows[0].count === 0) {
+      console.log('📝 Inserting sample gallery data...');
+      
+      // Get partner IDs
+      const [partners] = await connection.query('SELECT id FROM partners LIMIT 5');
+      
+      if (partners.length > 0) {
+        const sampleData = [
+          {
+            title: 'Corporate Event Photography',
+            description: 'Professional corporate event coverage with stunning photography',
+            partner_id: partners[0]?.id || null,
+            category: 'images',
+            media_urls: JSON.stringify(['/uploads/gallery/images/corp1.jpg', '/uploads/gallery/images/corp2.jpg']),
+            featured: true,
+            likes: 150,
+            views: 1200
+          },
+          {
+            title: 'Instagram Reels Compilation',
+            description: 'Trending Instagram reels from our recent events',
+            partner_id: partners[1]?.id || null,
+            category: 'instagram_video',
+            instagram_urls: JSON.stringify([
+              'https://www.instagram.com/reel/Cxample1',
+              'https://www.instagram.com/reel/Cxample2'
+            ]),
+            featured: true,
+            likes: 500,
+            views: 5000
+          },
+          {
+            title: 'YouTube Event Highlights',
+            description: 'Complete event coverage on YouTube',
+            partner_id: partners[2]?.id || null,
+            category: 'youtube_video',
+            youtube_urls: JSON.stringify([
+              'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+              'https://www.youtube.com/watch?v=example2'
+            ]),
+            featured: true,
+            likes: 1000,
+            views: 10000
+          },
+          {
+            title: 'Behind the Scenes Video',
+            description: 'Behind the scenes of our event setup',
+            partner_id: partners[3]?.id || null,
+            category: 'event_video',
+            media_urls: JSON.stringify(['/uploads/gallery/videos/bts1.mp4']),
+            featured: false,
+            likes: 75,
+            views: 800
+          }
+        ];
+        
+        for (const data of sampleData) {
+          await connection.query(`
+            INSERT INTO gallery 
+            (title, description, partner_id, category, media_urls, instagram_urls, youtube_urls, featured, likes, views, status) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
+          `, [
+            data.title, data.description, data.partner_id, data.category,
+            data.media_urls || null, data.instagram_urls || null, data.youtube_urls || null,
+            data.featured, data.likes, data.views
+          ]);
+        }
+        
+        console.log('✅ Sample gallery data inserted');
+      }
+    }
+  } catch (error) {
+    console.error('Error inserting sample gallery data:', error.message);
+  }
+};
+
+// Main connection function
 const connectDB = async (retries = 5) => {
   let connection;
   try {
@@ -179,7 +460,8 @@ const connectDB = async (retries = 5) => {
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
         updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_email (email),
-        INDEX idx_name (name)
+        INDEX idx_name (name),
+        INDEX idx_role (role)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
     console.log('✅ Users table ready');
@@ -249,6 +531,21 @@ const connectDB = async (retries = 5) => {
     // Create our_clients table
     await createOurClientsTable(connection);
     
+    // Create testimonials table
+    await createTestimonialsTable(connection);
+    
+    // Create partners table (MUST be before creating gallery table)
+    await createPartnersTable(connection);
+    
+    // Create gallery table with all new columns
+    await createGalleryTable(connection);
+    
+    // Update existing gallery table if needed (for existing databases)
+    await updateExistingGalleryTable(connection);
+    
+    // Insert sample gallery data
+    await insertSampleGalleryData(connection);
+    
     // Create default SuperAdmin
     await createDefaultSuperAdmin(connection);
     
@@ -266,13 +563,33 @@ const connectDB = async (retries = 5) => {
         ('Google', '/our-clients/google.png', 'Google Logo', 'active'),
         ('Microsoft', '/our-clients/microsoft.png', 'Microsoft Logo', 'active'),
         ('Amazon', '/our-clients/amazon.png', 'Amazon Logo', 'active'),
-        ('Facebook', '/our-clients/facebook.png', 'Facebook Logo', 'active')
+        ('Facebook', '/our-clients/facebook.png', 'Facebook Logo', 'active'),
+        ('Apple', '/our-clients/apple.png', 'Apple Logo', 'active')
       `);
       console.log('✅ Sample client data inserted');
     }
 
+    // Insert sample testimonials (if table is empty)
+    const [testimonialCount] = await connection.query('SELECT COUNT(*) as count FROM testimonials');
+    if (testimonialCount[0].count === 0) {
+      console.log('📝 Inserting sample testimonials...');
+      await connection.query(`
+        INSERT INTO testimonials (client_name, client_designation, client_company, testimonial_text, rating, status) VALUES
+        ('Rajesh Sharma', 'CEO', 'Tech Solutions Inc.', 'Excellent service! The team at Vidit Media delivered beyond our expectations.', 5, 'active'),
+        ('Priya Mehta', 'Marketing Head', 'Creative Agency', 'Professional and creative. Highly recommended for event coverage.', 5, 'active'),
+        ('Amit Patel', 'Event Coordinator', 'Grand Events Co.', 'Great experience working with them. Very responsive and talented.', 4, 'active')
+      `);
+      console.log('✅ Sample testimonials inserted');
+    }
+
     connection.release();
-    console.log('\n🎉 All tables created successfully!\n');
+    console.log('\n🎉 Database setup completed successfully!');
+    console.log('📊 Gallery supports:');
+    console.log('   - Multiple image uploads');
+    console.log('   - Multiple video uploads');
+    console.log('   - Multiple Instagram URLs');
+    console.log('   - Multiple YouTube URLs');
+    console.log('\n✅ Ready to accept requests\n');
     return true;
     
   } catch (error) {
