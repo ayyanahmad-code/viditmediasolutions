@@ -27,19 +27,25 @@ const startServer = async () => {
     process.exit(1);
   }
 
-  // Test email configuration
-  if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
+  // In server.js, replace the email test section with this:
+
+// Test email configuration (with error handling)
+if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
+  try {
     const emailReady = await emailService.testConnection();
     if (emailReady) {
       console.log('✅ Email service configured and ready');
     } else {
       console.warn('⚠️  Email service not configured properly. Emails will not be sent.');
-      console.warn('   To enable emails, add EMAIL_USER and EMAIL_PASSWORD to .env');
+      console.warn('   To enable emails, add valid EMAIL_USER and EMAIL_PASSWORD to .env');
     }
-  } else {
-    console.warn('⚠️  Email service not configured. Add EMAIL_USER and EMAIL_PASSWORD to .env to enable emails');
+  } catch (error) {
+    console.warn('⚠️  Email service error:', error.message);
+    console.warn('   Emails will not be sent until fixed');
   }
-
+} else {
+  console.warn('⚠️  Email service not configured. Add EMAIL_USER and EMAIL_PASSWORD to .env to enable emails');
+}
   // Start HTTP server
   const server = app.listen(PORT, () => {
     console.log(`\n✅ Server is running!`);
