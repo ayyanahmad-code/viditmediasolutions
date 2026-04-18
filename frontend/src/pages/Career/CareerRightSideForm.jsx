@@ -125,10 +125,10 @@ const CareerRightSideForm = ({ preSelectedPosition }) => {
 
       const contentType = response.headers.get("content-type");
 
-    if (!contentType || !contentType.includes("application/json")) {
-      const text = await response.text();
-      throw new Error("Server returned invalid response: " + text);
-    }
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        throw new Error("Server returned invalid response: " + text);
+      }
 
       const result = await response.json();
 

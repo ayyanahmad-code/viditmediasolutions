@@ -841,24 +841,11 @@
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcryptjs');
 
-// const pool = mysql.createPool({
-//   host: process.env.DB_HOST || 'localhost',
-//   user: process.env.DB_USER || 'root',
-//   password: process.env.DB_PASSWORD || '',
-//   database: process.env.DB_NAME || 'vidit_media',
-//   port: process.env.DB_PORT || 3306,
-//   waitForConnections: true,
-//   connectionLimit: 10,
-//   queueLimit: 0,
-//   enableKeepAlive: true,
-//   keepAliveInitialDelay: 0
-// });
-
 const pool = mysql.createPool({
-  host: process.env.DB_HOST || '136.243.233.41',
-  user: process.env.DB_USER || 'viditmed_vms',
-  password: process.env.DB_PASSWORD || 'Vidit@vms26',
-  database: process.env.DB_NAME || 'viditmed_vms',
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'vidit_media',
   port: process.env.DB_PORT || 3306,
   waitForConnections: true,
   connectionLimit: 10,
@@ -866,11 +853,6 @@ const pool = mysql.createPool({
   enableKeepAlive: true,
   keepAliveInitialDelay: 0
 });
-
-
-
-
-
 
 // ✅ Function to create default SuperAdmin
 const createDefaultSuperAdmin = async (connection) => {
@@ -1289,17 +1271,17 @@ const connectDB = async (retries = 5) => {
   let connection;
   try {
     console.log('🔌 Attempting to connect to MySQL...');
-    console.log(`📊 Database: ${process.env.DB_NAME || 'viditmed_vms'}`);
-    console.log(`👤 User: ${process.env.DB_USER || 'viditmed_vms'}`);
-    console.log(`🌐 Host: ${process.env.DB_HOST || '136.243.233.41'}`);
+    console.log(`📊 Database: ${process.env.DB_NAME || 'vidit_media'}`);
+    console.log(`👤 User: ${process.env.DB_USER || 'root'}`);
+    console.log(`🌐 Host: ${process.env.DB_HOST || 'localhost'}`);
     
     connection = await pool.getConnection();
     console.log('✅ MySQL Connected Successfully');
     
     // Create database if not exists
     try {
-      await connection.query(`CREATE DATABASE IF NOT EXISTS ${process.env.DB_NAME || 'viditmed_vms'}`);
-      await connection.query(`USE ${process.env.DB_NAME || 'viditmed_vms'}`);
+      await connection.query(`CREATE DATABASE IF NOT EXISTS ${process.env.DB_NAME || 'vidit_media'}`);
+      await connection.query(`USE ${process.env.DB_NAME || 'vidit_media'}`);
       console.log('✅ Database selected/created');
     } catch (dbError) {
       console.log('Database selection error:', dbError.message);
@@ -1505,13 +1487,13 @@ const connectDB = async (retries = 5) => {
       if (connection) connection.release();
       try {
         const tempConnection = await mysql.createConnection({
-          host: process.env.DB_HOST || '136.243.233.41',
-          user: process.env.DB_USER || 'viditmed_vms',
-          password: process.env.DB_PASSWORD || 'Vidit@vms26',
+          host: process.env.DB_HOST || 'localhost',
+          user: process.env.DB_USER || 'root',
+          password: process.env.DB_PASSWORD || '',
           port: process.env.DB_PORT || 3306
         });
-        await tempConnection.query(`CREATE DATABASE IF NOT EXISTS ${process.env.DB_NAME || 'viditmed_vms'}`);
-        console.log(`✅ Database ${process.env.DB_NAME || 'viditmed_vms'} created`);
+        await tempConnection.query(`CREATE DATABASE IF NOT EXISTS ${process.env.DB_NAME || 'vidit_media'}`);
+        console.log(`✅ Database ${process.env.DB_NAME || 'vidit_media'} created`);
         await tempConnection.end();
         
         if (retries > 0) {
