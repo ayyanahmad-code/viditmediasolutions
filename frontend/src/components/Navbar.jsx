@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import Logo from "../Images/Header/Header.gif";
 import { FaSearch, FaUser, FaSignInAlt, FaUserPlus, FaEnvelope, FaTachometerAlt } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
+import VisitorBadge from "./VisitorBadge";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -107,6 +108,10 @@ const Header = () => {
               className="h-18 w-36"
             />
           </Link>
+
+          <div className="flex items-center gap-4">
+            <VisitorBadge />
+          </div>
 
           {/* Desktop Navigation - Only Nav Items, No Auth Buttons */}
           <nav className="hidden md:flex items-center space-x-6">

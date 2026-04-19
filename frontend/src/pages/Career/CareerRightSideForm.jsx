@@ -1,7 +1,7 @@
 // src/pages/CareerRightSideForm.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaUpload, FaFile, FaCheckCircle, FaExternalLinkAlt, FaInfoCircle } from "react-icons/fa";
+import { FaUpload, FaFile, FaCheckCircle, FaExternalLinkAlt, FaInfoCircle, FaExclamationTriangle, FaTimes } from "react-icons/fa";
 
 // ✅ API URL - Use port 5000 for backend
 const API_BASE_URL = 'http://localhost:5000';
@@ -10,6 +10,7 @@ const CareerRightSideForm = ({ preSelectedPosition }) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
+    pan_card: "",
     email: "",
     phone: "",
     position: preSelectedPosition || "",
@@ -23,6 +24,13 @@ const CareerRightSideForm = ({ preSelectedPosition }) => {
   const [fileName, setFileName] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [submissionData, setSubmissionData] = useState(null);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorModalData, setErrorModalData] = useState({
+    title: "",
+    message: "",
+    lastDate: "",
+    nextEligibleDate: ""
+  });
 
   useEffect(() => {
     if (preSelectedPosition && preSelectedPosition !== formData.position) {
@@ -33,123 +41,168 @@ const CareerRightSideForm = ({ preSelectedPosition }) => {
     }
   }, [preSelectedPosition]);
 
+  // Format PAN card input (auto-uppercase)
+  const formatPanCard = (value) => {
+    let formatted = value.toUpperCase();
+    // Remove any non-alphanumeric characters
+    formatted = formatted.replace(/[^A-Z0-9]/g, '');
+    // Limit to 10 characters
+    formatted = formatted.slice(0, 10);
+    return formatted;
+  };
+
+  // Parse error message from backend
+  const parseErrorMessage = (errorMessage) => {
+    // Check if it's a 3-month cooldown error
+    if (errorMessage.includes("You can only apply once every 3 months")) {
+      // Extract dates from the error message
+      const lastDateMatch = errorMessage.match(/Last application was on (.*?)\./);
+      const nextDateMatch = errorMessage.match(/eligible to apply again on (.*?)\./);
+      
+      return {
+        isCooldownError: true,
+        lastDate: lastDateMatch ? lastDateMatch[1] : "unknown date",
+        nextEligibleDate: nextDateMatch ? nextDateMatch[1] : "unknown date",
+        message: errorMessage
+      };
+    }
+    return {
+      isCooldownError: false,
+      message: errorMessage
+    };
+  };
+
   // API call function
- // ✅ API call function (FULLY FIXED)
-const submitCareerApplication = async (applicationData, resumeFile) => {
-  try {
-    const safeName = (applicationData.name || "").trim();
-    const safeEmail = (applicationData.email || "").trim();
-    const safePhone = (applicationData.phone || "").trim();
-    const safePosition = (applicationData.position || preSelectedPosition || "").trim();
-    const safeExperience = (applicationData.experience || "").trim();
-    const safeMessage = (applicationData.message || "").trim();
+  const submitCareerApplication = async (applicationData, resumeFile) => {
+    try {
+      const safeName = (applicationData.name || "").trim();
+      const safePanCard = (applicationData.pan_card || "").trim().toUpperCase();
+      const safeEmail = (applicationData.email || "").trim();
+      const safePhone = (applicationData.phone || "").trim();
+      const safePosition = (applicationData.position || preSelectedPosition || "").trim();
+      const safeExperience = (applicationData.experience || "").trim();
+      const safeMessage = (applicationData.message || "").trim();
 
-    if (!safeName || !safeEmail || !safePosition) {
-      throw new Error('Validation failed: Please provide name, email and position.');
+      if (!safeName || !safeEmail || !safePosition) {
+        throw new Error('Validation failed: Please provide name, email and position.');
+      }
+
+      console.log("🚀 Preparing to submit career application:", {
+        name: safeName,
+        pan_card: safePanCard,
+        email: safeEmail,
+        phone: safePhone,
+        position: safePosition,
+        experience: safeExperience,
+        message: safeMessage,
+        file: resumeFile ? resumeFile.name : "<none>"
+      });
+
+      const formDataToSend = new FormData();
+
+      formDataToSend.append('name', safeName);
+      formDataToSend.append('email', safeEmail);
+      formDataToSend.append('phone', safePhone);
+      formDataToSend.append('position', safePosition);
+      formDataToSend.append('experience', safeExperience);
+      
+      if (safePanCard) {
+        formDataToSend.append('pan_card', safePanCard);
+      }
+
+      if (safeMessage) {
+        formDataToSend.append('message', safeMessage);
+      }
+
+      if (resumeFile) {
+        formDataToSend.append('resume', resumeFile);
+      }
+
+      const response = await fetch(`http://localhost:5000/api/career/apply`, {
+        method: 'POST',
+        body: formDataToSend,
+      });
+
+      const contentType = response.headers.get("content-type");
+
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        throw new Error("Server returned invalid response: " + text);
+      }
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        // Throw the error message from backend
+        throw new Error(result.message || 'Application submission failed');
+      }
+
+      return result;
+
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
     }
-
-    console.log("🚀 Preparing to submit career application:", {
-      name: safeName,
-      email: safeEmail,
-      phone: safePhone,
-      position: safePosition,
-      experience: safeExperience,
-      message: safeMessage,
-      file: resumeFile ? resumeFile.name : "<none>"
-    });
-
-    const formDataToSend = new FormData();
-
-    formDataToSend.append('name', safeName);
-    formDataToSend.append('email', safeEmail);
-    formDataToSend.append('phone', safePhone);
-    formDataToSend.append('position', safePosition);
-    formDataToSend.append('experience', safeExperience);
-
-    if (safeMessage) {
-      formDataToSend.append('message', safeMessage);
-    }
-
-    if (resumeFile) {
-      formDataToSend.append('resume', resumeFile);
-    }
-
-    // ✅ FIXED ENDPOINT
-    const response = await fetch(`http://localhost:5000/api/career/apply`, {
-      method: 'POST',
-      body: formDataToSend,
-    });
-
-    // ✅ SAFE JSON PARSE
-    const contentType = response.headers.get("content-type");
-
-    if (!contentType || !contentType.includes("application/json")) {
-      const text = await response.text();
-      throw new Error("Server returned invalid response: " + text);
-    }
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.message || 'Application submission failed');
-    }
-
-    return result;
-
-  } catch (error) {
-    console.error('API Error:', error);
-    throw error;
-  }
-};
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    
+    if (name === 'pan_card') {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: formatPanCard(value)
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
     
     if (submitStatus) setSubmitStatus(null);
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setSubmitStatus({
-          type: "error",
-          message: "File size should be less than 5MB"
-        });
-        return;
-      }
+// Update the file validation section in CareerRightSideForm.jsx
 
-      // Validate file type
-      const allowedTypes = [
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'image/jpeg',
-        'image/png'
-      ];
-      
-      if (!allowedTypes.includes(file.type)) {
-        setSubmitStatus({
-          type: "error",
-          message: "Please upload PDF, DOC, DOCX, JPG, or PNG files only"
-        });
-        return;
-      }
-
-      setFormData(prev => ({ ...prev, file }));
-      setFileName(file.name);
-      
-      if (submitStatus?.type === "error") {
-        setSubmitStatus(null);
-      }
+const handleFileChange = (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setSubmitStatus({
+        type: "error",
+        message: "File size should be less than 5MB"
+      });
+      return;
     }
-  };
 
+    // Validate file type - Only PDF, DOC, DOCX
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+    
+    const allowedExtensions = ['.pdf', '.doc', '.docx'];
+    const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+    
+    if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
+      setSubmitStatus({
+        type: "error",
+        message: "Please upload PDF, DOC, or DOCX files only"
+      });
+      return;
+    }
+
+    setFormData(prev => ({ ...prev, file }));
+    setFileName(file.name);
+    
+    if (submitStatus?.type === "error") {
+      setSubmitStatus(null);
+    }
+  }
+};
   const removeFile = () => {
     setFormData(prev => ({ ...prev, file: null }));
     setFileName("");
@@ -157,10 +210,15 @@ const submitCareerApplication = async (applicationData, resumeFile) => {
 
   const validateForm = (data = formData) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
     const selectedPosition = (data.position || preSelectedPosition || "").trim();
 
     if (!(data.name || "").trim()) {
       return "Please enter your full name";
+    }
+
+    if ((data.pan_card || "").trim() && !panRegex.test(data.pan_card.trim())) {
+      return "Please enter a valid PAN card number (e.g., ABCDE1234F)";
     }
 
     if (!emailRegex.test((data.email || "").trim())) {
@@ -196,6 +254,7 @@ const submitCareerApplication = async (applicationData, resumeFile) => {
       ...formData,
       position: effectivePosition,
       name: (formData.name || "").trim(),
+      pan_card: (formData.pan_card || "").trim().toUpperCase(),
       email: (formData.email || "").trim(),
       phone: (formData.phone || "").trim(),
       experience: (formData.experience || "").trim(),
@@ -222,6 +281,7 @@ const submitCareerApplication = async (applicationData, resumeFile) => {
 
     console.log("🚀 FINAL FORM DATA:", {
       name: finalFormData.name,
+      pan_card: finalFormData.pan_card,
       email: finalFormData.email,
       position: finalFormData.position,
       phone: finalFormData.phone,
@@ -245,6 +305,7 @@ const submitCareerApplication = async (applicationData, resumeFile) => {
         // Reset form
         setFormData({
           name: "",
+          pan_card: "",
           email: "",
           phone: "",
           position: preSelectedPosition || "",
@@ -261,18 +322,36 @@ const submitCareerApplication = async (applicationData, resumeFile) => {
     } catch (error) {
       console.error('Submission error:', error);
       
-      let errorMessage = "Failed to submit application. Please try again.";
+      const parsedError = parseErrorMessage(error.message);
       
-      if (error.message.includes("NetworkError") || error.message.includes("Failed to fetch")) {
-        errorMessage = "Network error. Please make sure the backend server is running on port 5000.";
-      } else if (error.message.includes("file")) {
-        errorMessage = error.message;
+      if (parsedError.isCooldownError) {
+        // Show modal for 3-month cooldown error
+        setErrorModalData({
+          title: "Application Restriction",
+          message: parsedError.message,
+          lastDate: parsedError.lastDate,
+          nextEligibleDate: parsedError.nextEligibleDate
+        });
+        setShowErrorModal(true);
+      } else {
+        // Show regular error
+        let errorMessage = "Failed to submit application. Please try again.";
+        
+        if (error.message.includes("NetworkError") || error.message.includes("Failed to fetch")) {
+          errorMessage = "Network error. Please make sure the backend server is running on port 5000.";
+        } else if (error.message.includes("PAN")) {
+          errorMessage = error.message;
+        } else if (error.message.includes("file")) {
+          errorMessage = error.message;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
+        setSubmitStatus({
+          type: "error",
+          message: errorMessage
+        });
       }
-      
-      setSubmitStatus({
-        type: "error",
-        message: errorMessage
-      });
       
     } finally {
       setIsLoading(false);
@@ -315,21 +394,42 @@ const submitCareerApplication = async (applicationData, resumeFile) => {
 
         {/* FORM */}
         <form className="space-y-6" onSubmit={handleSubmit} noValidate>
-          {/* Name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Full Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-              placeholder="John Doe"
-              disabled={isLoading}
-              required
-            />
+          {/* Name and PAN Card - Side by Side */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Full Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                placeholder="John Doe"
+                disabled={isLoading}
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                PAN Card Number <span className="text-gray-400 text-xs">(Optional)</span>
+              </label>
+              <input
+                type="text"
+                name="pan_card"
+                value={formData.pan_card}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all uppercase"
+                placeholder="ABCDE1234F"
+                disabled={isLoading}
+                maxLength="10"
+              />
+              <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                <FaInfoCircle size={10} /> Format: 5 letters, 4 digits, 1 letter (e.g., ABCDE1234F)
+              </p>
+            </div>
           </div>
 
           {/* Email & Phone */}
@@ -408,7 +508,7 @@ const submitCareerApplication = async (applicationData, resumeFile) => {
                 required
               >
                 <option value="">Select Experience</option>
-                <option value="0-1"> Fresher</option>
+                <option value="0-1">Fresher</option>
                 <option value="0-1">0-1 years</option>
                 <option value="1-3">1-3 years</option>
                 <option value="3-5">3-5 years</option>
@@ -441,7 +541,7 @@ const submitCareerApplication = async (applicationData, resumeFile) => {
                       {isLoading ? 'Processing...' : 'Click to upload resume'}
                     </span>
                     <span className="text-sm text-gray-500 mt-1">
-                      Supported: PDF, DOC, DOCX, JPG, PNG (Max 5MB)
+                      Supported: PDF, DOC, DOCX (Max 5MB)
                     </span>
                   </div>
                 </label>
@@ -530,10 +630,19 @@ const submitCareerApplication = async (applicationData, resumeFile) => {
         </form>
       </div>
 
-      {/* Success Modal */}
+      {/* Success Modal with Close Button */}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 relative">
+            {/* Close Button */}
+            <button
+              onClick={() => setShowSuccessModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+              aria-label="Close modal"
+            >
+              <FaTimes size={20} />
+            </button>
+            
             <div className="text-center">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <FaCheckCircle className="text-green-500 text-3xl" />
@@ -577,6 +686,52 @@ const submitCareerApplication = async (applicationData, resumeFile) => {
                 >
                   Return to Homepage
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Modal for 3-Month Cooldown with Close Button */}
+      {showErrorModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 relative">
+            {/* Close Button */}
+            <button
+              onClick={() => setShowErrorModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+              aria-label="Close modal"
+            >
+              <FaTimes size={20} />
+            </button>
+            
+            <div className="text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FaExclamationTriangle className="text-red-500 text-3xl" />
+              </div>
+              
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                {errorModalData.title}
+              </h3>
+              
+              <div className="bg-red-50 p-4 rounded-lg mb-4">
+                <p className="text-red-700 font-medium mb-2">
+                  You can only apply once every 3 months with the same PAN card.
+                </p>
+                
+                {errorModalData.lastDate && (
+                  <div className="text-sm text-gray-600 mt-3 pt-3 border-t border-red-200">
+                    <p className="font-semibold">📅 Last Application Date:</p>
+                    <p className="text-gray-700">{errorModalData.lastDate}</p>
+                  </div>
+                )}
+                
+                {errorModalData.nextEligibleDate && (
+                  <div className="text-sm text-gray-600 mt-2">
+                    <p className="font-semibold">⏰ Next Eligible Date:</p>
+                    <p className="text-gray-700 font-medium">{errorModalData.nextEligibleDate}</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

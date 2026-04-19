@@ -142,14 +142,6 @@ const Footer = () => {
             © {currentYear} Vidit Media Solutions. All rights reserved.
           </div>
 
-          {/* VISITOR COUNTER */}
-          <div className="text-sm text-gray-600 flex items-center gap-2">
-            👀 Website Visitors:
-            <span className="font-semibold text-black">
-              {visitorCount}
-            </span>
-          </div>
-
           {/* DEVELOPER CREDIT */}
           <a
             href="https://www.technovani.com/"

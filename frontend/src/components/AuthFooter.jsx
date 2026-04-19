@@ -176,24 +176,8 @@ const AuthFooter = () => {
           <div className="text-xs text-gray-500 text-center md:text-left">
             © {currentYear} Vidit Media Solutions. All rights reserved.
           </div>
-
-          {/* VISITOR COUNTER */}
-          <div className="text-xs text-gray-600 flex items-center gap-2">
-            👀 Website Visitors:
-            <span className="font-semibold text-purple-600">
-              {visitorCount}
-            </span>
-          </div>
-
-          {/* LOGOUT BUTTON */}
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 text-xs text-red-600 hover:text-red-700 transition-colors"
-          >
-            <FaSignOutAlt />
-            Logout
-          </button>
-
+          
+         
           {/* DEVELOPER CREDIT */}
           <a
             href="https://www.technovani.com/"

@@ -1,5 +1,6 @@
 // backend/controllers/contactController.js
 const { pool } = require('../config/database');
+const emailService = require('../utils/emailService'); // ✅ Add email service
 
 // Submit Contact Form
 exports.submitContact = async (req, res) => {
@@ -35,6 +36,22 @@ exports.submitContact = async (req, res) => {
     await pool.query('UPDATE contacts SET reference_id = ? WHERE id = ?', [referenceId, result.insertId]);
 
     console.log('✅ Contact saved successfully! ID:', result.insertId);
+
+    // ✅ Send email notifications
+    const contactData = {
+      id: result.insertId,
+      name,
+      email,
+      contact_number,
+      subject,
+      message
+    };
+
+    // Send notification to admin
+    await emailService.sendContactNotification(contactData);
+    
+    // Send auto-reply to user
+    await emailService.sendContactAutoReply(contactData);
 
     res.json({
       success: true,

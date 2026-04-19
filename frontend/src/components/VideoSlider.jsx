@@ -103,10 +103,13 @@ const VideoSlider = () => {
 
   if (!videos.length) return null;
 
-  /* ================= 3D POSITION LOGIC ================= */
+  /* ================= RESPONSIVE 3D ================= */
+  const isMobile = window.innerWidth < 640;
+
   const getStyle = (i) => {
     const offset = i - index;
 
+    // CENTER
     if (offset === 0)
       return {
         scale: 1,
@@ -116,22 +119,24 @@ const VideoSlider = () => {
         opacity: 1,
       };
 
+    // LEFT
     if (offset === -1 || offset === videos.length - 1)
       return {
-        scale: 0.8,
-        rotateY: 40,
-        x: -220,
+        scale: isMobile ? 0.9 : 0.8,
+        rotateY: isMobile ? 20 : 40,
+        x: isMobile ? -120 : -220,
         zIndex: 5,
-        opacity: 0.6,
+        opacity: 0.7,
       };
 
+    // RIGHT
     if (offset === 1 || offset === -(videos.length - 1))
       return {
-        scale: 0.8,
-        rotateY: -40,
-        x: 220,
+        scale: isMobile ? 0.9 : 0.8,
+        rotateY: isMobile ? -20 : -40,
+        x: isMobile ? 120 : 220,
         zIndex: 5,
-        opacity: 0.6,
+        opacity: 0.7,
       };
 
     return {
@@ -145,8 +150,10 @@ const VideoSlider = () => {
 
   return (
     <>
-      <div className="relative flex justify-center items-center w-full h-[500px] perspective-[1200px] overflow-hidden">
-        
+      <div className="relative flex justify-center items-center w-full 
+      h-[320px] sm:h-[420px] md:h-[500px] 
+      perspective-[1200px] overflow-hidden">
+
         {/* SLIDES */}
         {videos.map((video, i) => {
           const style = getStyle(i);
@@ -161,7 +168,9 @@ const VideoSlider = () => {
                 opacity: style.opacity,
               }}
               transition={{ duration: 0.6 }}
-              className="absolute w-[260px] sm:w-[320px] md:w-[400px] cursor-pointer"
+              className="absolute 
+              w-[85%] sm:w-[320px] md:w-[400px] 
+              cursor-pointer"
               style={{
                 zIndex: style.zIndex,
                 transformStyle: "preserve-3d",
@@ -171,7 +180,9 @@ const VideoSlider = () => {
               <div className="rounded-2xl overflow-hidden shadow-2xl">
                 <img
                   src={video.thumbnail}
-                  className="w-full h-[180px] sm:h-[220px] md:h-[260px] object-cover"
+                  className="w-full 
+                  h-[200px] sm:h-[220px] md:h-[260px] 
+                  object-cover"
                   alt=""
                 />
 
@@ -186,27 +197,21 @@ const VideoSlider = () => {
           );
         })}
 
-        {/* BUTTONS - Fixed z-index to ensure they're clickable */}
+        {/* BUTTONS */}
         <button
           onClick={handlePrev}
-          className="absolute left-4 top-1/2 -translate-y-1/2 
-          bg-black/50 hover:bg-black/70 text-white w-10 h-10 rounded-full 
-          flex items-center justify-center transition-all duration-300
-          z-20 cursor-pointer"
-          style={{ pointerEvents: 'auto' }}
-          aria-label="Previous video"
+          className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 
+          bg-black/50 hover:bg-black/70 text-white w-9 h-9 sm:w-10 sm:h-10 rounded-full 
+          flex items-center justify-center z-20"
         >
           <FaChevronLeft />
         </button>
 
         <button
           onClick={handleNext}
-          className="absolute right-4 top-1/2 -translate-y-1/2 
-          bg-black/50 hover:bg-black/70 text-white w-10 h-10 rounded-full 
-          flex items-center justify-center transition-all duration-300
-          z-20 cursor-pointer"
-          style={{ pointerEvents: 'auto' }}
-          aria-label="Next video"
+          className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 
+          bg-black/50 hover:bg-black/70 text-white w-9 h-9 sm:w-10 sm:h-10 rounded-full 
+          flex items-center justify-center z-20"
         >
           <FaChevronRight />
         </button>
@@ -215,7 +220,7 @@ const VideoSlider = () => {
       {/* MODAL */}
       {activeVideo && (
         <div
-          className="fixed inset-0 bg-black/90 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4"
           onClick={() => setActiveVideo(null)}
         >
           <div
