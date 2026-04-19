@@ -93,25 +93,74 @@ const startServer = async () => {
     process.exit(1);
   }
 
-  // Test email configuration
+  // ✅ Initialize email service
   if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
-    const emailReady = await emailService.testConnection();
-    if (emailReady) {
-      console.log('✅ Email service configured and ready');
-    } else {
-      console.warn('⚠️  Email service not configured properly. Emails will not be sent.');
-      console.warn('   To enable emails, add EMAIL_USER and EMAIL_PASSWORD to .env');
+    console.log('📧 Initializing email service...');
+    try {
+      const emailReady = await emailService.testConnection();
+      if (emailReady) {
+        console.log('✅ Email service configured and ready');
+      } else {
+        console.warn('⚠️ Email service not configured properly. Emails will not be sent.');
+      }
+    } catch (error) {
+      console.error('❌ Email service initialization error:', error.message);
     }
   } else {
-    console.warn('⚠️  Email service not configured. Add EMAIL_USER and EMAIL_PASSWORD to .env to enable emails');
+    console.warn('⚠️ Email credentials not provided. Email service disabled.');
+    console.warn('   To enable emails, add EMAIL_USER and EMAIL_PASSWORD to .env');
   }
 
-  // Start HTTP server
-  const server = app.listen(PORT, () => {
-    console.log(`\n✅ Server is running!`);
-    console.log(`📍 URL: http://localhost:${PORT}`);
-    console.log(`🔑 Health check: http://localhost:${PORT}/health`);
-    console.log(`📝 API endpoints:`);
+  const server = http.createServer(app);
+
+  const io = new Server(server, {
+    cors: { 
+      origin: process.env.FRONTEND_URL || "http://localhost:5173",
+      methods: ["GET", "POST"],
+      credentials: true
+    }
+  });
+
+  // Store connected sockets with their IPs
+  const connectedSockets = new Map();
+
+  io.on("connection", (socket) => {
+    console.log("🔌 User connected:", socket.id);
+
+    socket.on("join", async (ip) => {
+      console.log(`Socket ${socket.id} joined with IP: ${ip}`);
+      socket.ip = ip;
+      connectedSockets.set(socket.id, ip);
+      
+      // Send updated count to all clients
+      const total = await getOnlineUsers();
+      io.emit("onlineUsers", total);
+    });
+
+    socket.on("disconnect", async () => {
+      console.log("User disconnected:", socket.id);
+      
+      if (socket.ip) {
+        await setOffline(socket.ip);
+        connectedSockets.delete(socket.id);
+        
+        // Send updated count to all clients
+        const total = await getOnlineUsers();
+        io.emit("onlineUsers", total);
+      }
+    });
+  });
+
+  // Broadcast online users count every 30 seconds (optional)
+  setInterval(async () => {
+    const total = await getOnlineUsers();
+    io.emit("onlineUsers", total);
+  }, 30000);
+
+  server.listen(PORT, () => {
+    console.log(`\n✅ Server running on http://localhost:${PORT}`);
+    console.log(`📧 Email status: ${emailService.isConfigured ? 'Configured ✅' : 'Not configured ⚠️'}`);
+    console.log(`\n📝 Available API endpoints:`);
     console.log(`   POST   /api/auth/register`);
     console.log(`   POST   /api/auth/login`);
     console.log(`   POST   /api/contact`);
